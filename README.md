@@ -1,5 +1,10 @@
 # Dog_detectection
 detect dog in image
+<img width="1220" alt="화면 캡처 2024-10-28 190352" src="https://github.com/user-attachments/assets/45d42881-8224-47cf-a954-25fb5040d3f6">
+<img width="1238" alt="화면 캡처 2024-10-28 190429" src="https://github.com/user-attachments/assets/1ffe41a4-9563-4990-ad2d-45a37b791d03">
+<img width="1234" alt="화면 캡처 2024-10-28 191159" src="https://github.com/user-attachments/assets/57592602-b538-47ea-aecf-8383a2ef1c9b">
+
+
 # DogDetector 구현 가이드
 
 ## 개요
