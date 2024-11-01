@@ -33,7 +33,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
 @Composable
 fun TestScreen() {
     val context = LocalContext.current
@@ -42,13 +41,7 @@ fun TestScreen() {
     )
 
     val detectedDogs by viewModel.detectedDogs.collectAsState()
-    val testBitmap = remember {
-        runCatching {
-            context.assets.open("dogx.jpg").use {
-                BitmapFactory.decodeStream(it)
-            }
-        }.getOrNull()
-    }
+    val processedImage by viewModel.processedImage.collectAsState()
 
     Column(
         modifier = Modifier
@@ -56,11 +49,11 @@ fun TestScreen() {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 테스트 이미지 표시
-        testBitmap?.let { bitmap ->
+        // 처리된 이미지 표시
+        processedImage?.let { bitmap ->
             Image(
                 bitmap = bitmap.asImageBitmap(),
-                contentDescription = "Test Dog Image",
+                contentDescription = "Processed Image",
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
@@ -74,7 +67,7 @@ fun TestScreen() {
                 .padding(16.dp)
                 .fillMaxWidth()
         ) {
-            Text("강아지 감지 테스트 실행")
+            Text("동물 감지 테스트 실행")
         }
 
         // 감지 결과 표시
@@ -84,18 +77,18 @@ fun TestScreen() {
                 .fillMaxWidth()
                 .background(Color.Black.copy(alpha = 0.5f))
         ) {
-            items(detectedDogs) { dog ->
+            items(detectedDogs) { detection ->
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(8.dp)
                 ) {
                     Text(
-                        text = "강아지 감지! 신뢰도: ${(dog.confidence * 100).toInt()}%",
+                        text = "${detection.label} 감지! 신뢰도: ${(detection.confidence * 100).toInt()}%",
                         color = Color.White
                     )
                     Text(
-                        text = "위치: ${dog.boundingBox}",
+                        text = "위치: ${detection.boundingBox}",
                         color = Color.White,
                         fontSize = 12.sp
                     )

@@ -1,6 +1,7 @@
 package com.example.dog
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -16,12 +17,21 @@ class TestViewModel(context: Context) : ViewModel() {
     private val _detectedDogs = MutableStateFlow<List<DogDetectionResult>>(emptyList())
     val detectedDogs = _detectedDogs.asStateFlow()
 
+    private val _processedImage = MutableStateFlow<Bitmap?>(null)
+    val processedImage = _processedImage.asStateFlow()
+
     fun runDetection() {
         Log.d(tag, "감지 실행 시작")
-        detector.detectDogsTest { dogs ->
+        detector.detectDogsTest { dogs, processedBitmap ->
             Log.d(tag, "감지 결과 수신: ${dogs.size}개")
             _detectedDogs.value = dogs
+            _processedImage.value = processedBitmap
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        detector.close()
     }
 }
 

@@ -1,9 +1,7 @@
 package com.example.dog.detector
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.RectF
+import android.graphics.*
 import android.util.Log
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.support.common.FileUtil
@@ -25,7 +23,7 @@ class DogDetector(private val context: Context) {
         private const val IMAGE_SIZE_Y = 300
         private const val MAX_DETECTIONS = 10
         private const val MODEL_FILE = "detect.tflite"
-        private const val TEST_IMAGE_FILE = "dogx.jpg"
+        private const val TEST_IMAGE_FILE = "mm.jpg"
     }
 
     init {
@@ -70,18 +68,45 @@ class DogDetector(private val context: Context) {
         return imageProcessor.process(tensorImage)
     }
 
-    fun detectDogsTest(onDetection: (List<DogDetectionResult>) -> Unit) {
+    fun detectDogsTest(onDetection: (List<DogDetectionResult>, Bitmap) -> Unit) {
         if (interpreter == null) {
             Log.e(tag, "interpreter가 null입니다. 재초기화 시도...")
             initializeInterpreter()
             if (interpreter == null) {
                 Log.e(tag, "interpreter 재초기화 실패")
-                onDetection(emptyList())
+                onDetection(emptyList(), testImage ?: return)
                 return
             }
         }
 
         testImage?.let { bitmap ->
+            // 원본 이미지를 수정 가능한 비트맵으로 변환
+            val mutableBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
+            val canvas = Canvas(mutableBitmap)
+
+            // 바운딩 박스를 그리기 위한 Paint 객체 설정
+            val boxPaint = Paint().apply {
+                color = Color.RED
+                style = Paint.Style.STROKE
+                strokeWidth = 8f
+                isAntiAlias = true
+            }
+
+            // 텍스트를 위한 Paint 객체
+            val textPaint = Paint().apply {
+                color = Color.RED
+                textSize = 48f
+                isFakeBoldText = true
+                isAntiAlias = true
+            }
+
+            // 텍스트 배경을 위한 Paint 객체
+            val textBackgroundPaint = Paint().apply {
+                color = Color.WHITE
+                alpha = 180
+                style = Paint.Style.FILL
+            }
+
             try {
                 val tensorImage = loadImage(bitmap)
 
@@ -107,14 +132,39 @@ class DogDetector(private val context: Context) {
                     val score = outputScores[0][i]
                     val label = outputClasses[0][i].toInt()
 
-                    // COCO 데이터셋에서 개는 클래스 ID 17
-                    if (label == 17 && score > 0.5f) {
+                    if (label in listOf(15, 16, 17) && score > 0.4f) {
+                        // 15(새), 16(고양이), 17(강아지)
                         val location = outputLocations[0][i]
                         val boundingBox = RectF(
                             location[1] * bitmap.width,
                             location[0] * bitmap.height,
                             location[3] * bitmap.width,
                             location[2] * bitmap.height
+                        )
+
+                        // 바운딩 박스 그리기
+                        canvas.drawRect(boundingBox, boxPaint)
+
+                        // 신뢰도 텍스트 준비
+                        val text = String.format("강아지: %.1f%%", score * 100)
+                        val textBounds = Rect()
+                        textPaint.getTextBounds(text, 0, text.length, textBounds)
+
+                        // 텍스트 배경 그리기
+                        val textBackground = RectF(
+                            boundingBox.left,
+                            boundingBox.top - textBounds.height() - 20f,
+                            boundingBox.left + textBounds.width() + 20f,
+                            boundingBox.top
+                        )
+                        canvas.drawRect(textBackground, textBackgroundPaint)
+
+                        // 텍스트 그리기
+                        canvas.drawText(
+                            text,
+                            boundingBox.left + 10f,
+                            boundingBox.top - 10f,
+                            textPaint
                         )
 
                         detections.add(
@@ -128,15 +178,15 @@ class DogDetector(private val context: Context) {
                     }
                 }
 
-                onDetection(detections)
+                onDetection(detections, mutableBitmap)
             } catch (e: Exception) {
                 Log.e(tag, "감지 중 오류 발생", e)
                 e.printStackTrace()
-                onDetection(emptyList())
+                onDetection(emptyList(), bitmap)
             }
         } ?: run {
             Log.e(tag, "테스트 이미지가 null입니다")
-            onDetection(emptyList())
+            onDetection(emptyList(), Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888))
         }
     }
 
